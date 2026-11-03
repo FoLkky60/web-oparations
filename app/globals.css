@@ -1,26 +1,125 @@
 @import "tailwindcss";
 
+/*
+ * ============================================================================
+ * APP DESIGN TOKENS — single source of truth for the platform's OWN UI theme.
+ * ============================================================================
+ * ธีมหลักเป็นสีแดงตาม mockup ในชีต (MSC) AIDLC Workshop - Usecase02 (image1/image2).
+ * นี่คือธีมของ "ตัวแอป" เอง — คนละชุดกับ DESIGN_SYSTEM_V1 (brown #73493A) ใน
+ * packages/core ที่ใช้เป็นมาตรฐานสำหรับ "แปลงเว็บที่ผู้ใช้อัปโหลด" ห้ามสับสนกัน.
+ *
+ * กติกา (ตาม design-system-policies.md):
+ *  - component อ้างอิงผ่าน var(--...) เท่านั้น ห้าม hardcode hex ใน component
+ *  - ชื่อ token คงที่ ปรับได้เฉพาะค่า เพิ่ม token ใหม่ต้อง sync เอกสารด้วย
+ *  - light mode เป็นค่าเริ่มต้น
+ *
+ * Contrast (WCAG 2.2 AA):
+ *  - ตัวอักษรขาวบน --color-primary (#d71920, ADD-04 D-1) ≈ 5.2:1 → ผ่าน AA (normal text)
+ *    เดิม #e8392e ให้ ~3.7:1 (ตก AA) จึงเลื่อน primary เป็นเฉดเข้มขึ้นเล็กน้อย
+ *    และเก็บ #e8392e ไว้เป็น --color-accent (ใช้กับพื้น/ไอคอน ไม่ใช่ข้อความ)
+ *  - --color-text (#1f2430) บน --color-surface/background ≈ 14:1 → ผ่าน AA
+ *  - --color-muted (#5b6270) บน --color-background (#ffffff) ≈ 5.6:1 → ผ่าน AA
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* ---- Brand / primary (ปุ่มหลัก, ลิงก์เด่น, state active) ---- */
+  --color-primary: #d71920;        /* ADD-04 D-1: ค่าจาก mockup (color.primary) — ตัวอักษรขาว ≈5.2:1 ผ่าน AA */
+  --color-primary-hover: #b5151b;  /* hover — ค่าที่ระบบแนะนำ (mockup ไม่ระบุ) */
+  --color-primary-active: #941116; /* active/pressed — ค่าที่ระบบแนะนำ */
+  --color-primary-dark: #b5151b;   /* alias เดิม (คงไว้เพื่อ backward-compat) */
+  --color-accent: #e8392e;         /* แดงสดเดิม — ใช้เป็น accent บนพื้น/ไอคอน ไม่ใช้รองข้อความขาวขนาดเล็ก */
+  --color-secondary: #ffe5e3;      /* พื้นอ่อนโทนแบรนด์ (soft fill / badge พื้นหลัง) */
+  --color-on-primary: #ffffff;     /* ข้อความบนพื้น primary */
+
+  /* ---- Semantic (ความหมาย: ต้องมีไอคอน/label กำกับด้วย ไม่พึ่งสีอย่างเดียว) ---- */
+  --color-success: #15803d;        /* เข้มพอให้ตัวอักษรขาวผ่าน AA */
+  --color-warning: #b45309;        /* amber เข้ม */
+  --color-danger: #b91c1c;
+  --color-info: #1d4ed8;
+
+  /* ---- Neutral surface levels (ไล่ระดับพื้นผิว) ---- */
+  --color-background: #ffffff;     /* surface/card base */
+  --color-surface: #f6f7f9;        /* page base (พื้นหลังหลักของ main) */
+  --color-surface-muted: #eef0f3;  /* section tint / soft fill */
+  --color-border: #e6e8ec;         /* เส้นขอบ/ตัวคั่น */
+
+  /* ---- Text ---- */
+  --color-text: #1f2430;           /* ข้อความหลัก */
+  --color-muted: #5b6270;          /* ข้อความรอง (ผ่าน AA บนขาว) */
+
+  /* ---- Dark sidebar (ตาม mockup) ---- */
+  --color-sidebar: #1b2030;
+  --color-sidebar-muted: #9aa1b4;  /* ยกความสว่างจากเดิมให้อ่านง่ายบนพื้นเข้ม */
+  --color-sidebar-active: #d71920; /* ใช้ primary เดียวกัน */
+
+  /* ---- Radius scale ---- */
+  --radius-small: 4px;
+  --radius-medium: 8px;
+  --radius-large: 16px;
+  --radius-full: 9999px;
+
+  /* ---- Spacing scale ---- */
+  --spacing-xsmall: 4px;
+  --spacing-small: 8px;
+  --spacing-medium: 16px;
+  --spacing-large: 24px;
+  --spacing-xlarge: 32px;
+
+  /* ---- Shadow tokens ---- */
+  --shadow-sm: 0 1px 2px 0 rgb(16 24 40 / 0.05);
+  --shadow-md: 0 2px 8px -1px rgb(16 24 40 / 0.08);
+  --shadow-lg: 0 10px 24px -6px rgb(16 24 40 / 0.12);
+
+  /* ---- Font tokens ---- */
+  --font-sans: Inter, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", "Menlo", monospace;
+
+  /* ---- Motion tokens ---- */
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
 }
 
+/*
+ * Bridge CSS variables -> Tailwind theme (v4 @theme inline).
+ * ทำให้ utility เช่น text-foreground / bg-background ผูกกับ token ด้านบน.
+ */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-background: var(--color-background);
+  --color-foreground: var(--color-text);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+}
+
+/*
+ * A11y utilities (WCAG 2.2 AA):
+ *  - focus ring ที่มองเห็นได้ชัดด้วย keyboard (focus-visible)
+ *  - tap target ขั้นต่ำ 44px สำหรับปุ่ม/ลิงก์/อินพุต
+ */
+:where(a, button, input, select, textarea, [role="button"], [tabindex]):focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-small);
+}
+
+/* tap target ≥ 44px — ใช้ utility class ตรง ๆ กับ interactive element ที่เล็ก */
+.tap-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

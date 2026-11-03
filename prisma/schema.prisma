@@ -1,0 +1,97 @@
+// Prisma schema for the PRODUCTION persistence path.
+//
+// Phase 1 ships with a file-backed Repository implementation (app/lib/repository.ts)
+// so the MVP runs with zero infrastructure. This schema documents the target
+// PostgreSQL model; the Repository interface maps 1:1 onto these tables. To
+// migrate: provision Postgres, set DATABASE_URL, run `npx prisma migrate dev`,
+// then implement a PrismaRepository against the same Repository interface.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id               String            @id @default(cuid())
+  name             String
+  originalFilename String?
+  status           String            @default("created")
+  entryPoint       String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  versions         ProjectVersion[]
+  analyses         AnalysisResult[]
+  transformations  TransformationJob[]
+
+  @@index([status])
+}
+
+model ProjectVersion {
+  id                  String   @id @default(cuid())
+  projectId           String
+  project             Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  versionNumber       Int
+  sourceType          String // "original" | "standardized"
+  storageReference    String // object-storage key, NOT the file bytes
+  designSystemVersion String?
+  createdAt           DateTime @default(now())
+
+  @@unique([projectId, versionNumber])
+  @@index([projectId])
+}
+
+model AnalysisResult {
+  id                       String   @id @default(cuid())
+  projectVersionId         String
+  project                  Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId                String
+  status                   String
+  detectedComponents       Json
+  detectedDesignProperties Json
+  findings                 Json
+  warnings                 Json
+  designSystemVersion      String
+  createdAt                DateTime @default(now())
+
+  @@index([projectId])
+}
+
+model TransformationJob {
+  id                    String    @id @default(cuid())
+  projectVersionId      String
+  project               Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId             String
+  status                String
+  transformationSummary Json
+  storageReference      String?
+  errorMessage          String?
+  createdAt             DateTime  @default(now())
+  completedAt           DateTime?
+
+  @@index([projectId])
+}
+
+model DesignToken {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  category  String
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ComponentMapping {
+  id                  String   @id @default(cuid())
+  sourceComponentType String
+  targetComponentType String
+  mappingRules        Json
+  enabled             Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([sourceComponentType])
+}

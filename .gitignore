@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# platform local storage (uploads, extracted projects, file-backed db)
+/storage
