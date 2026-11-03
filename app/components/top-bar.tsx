@@ -4,8 +4,6 @@ import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "rea
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  getBuiltProject,
-  getBuiltProjects,
   getCategories,
   getNotifications,
   getSite,
@@ -19,7 +17,7 @@ import { IconBell, IconChevronRight, IconHelp, IconSearch } from "./icons";
 
 /**
  * Top bar (ADD-04 §4.1): breadcrumb · search (Ctrl/Cmd + K) · notifications · help · avatar
- * ค้นหาเฉพาะข้อมูล mock ใน store (เมนู, imported websites, built projects, component categories)
+ * ค้นหาเฉพาะข้อมูล mock ใน store (เมนู, imported websites (5) — ADD-05 ไม่มี built projects แยก, component categories)
  */
 export function TopBar() {
   const pathname = usePathname();
@@ -104,9 +102,6 @@ function useBreadcrumb(pathname: string): Crumb[] {
     if (seg === "imported") {
       return [root, { label: "Imported websites" }, { label: (id && getSite(id)?.name) || "Website" }];
     }
-    if (seg === "built") {
-      return [root, { label: "Built projects" }, { label: (id && getBuiltProject(id)?.name) || "Project" }];
-    }
     const item = MAIN_NAV.find((n) => n.href === `/${seg}`);
     const crumbs: Crumb[] = [root, { label: item?.label ?? seg, href: item?.href }];
     if (id) crumbs.push({ label: decodeURIComponent(id) });
@@ -130,7 +125,6 @@ function GlobalSearch() {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const sites = useStandard(getSites);
-  const built = useStandard(getBuiltProjects);
   const categories = useStandard(getCategories);
 
   useEffect(() => {
@@ -152,11 +146,10 @@ function GlobalSearch() {
         label: n.label,
         group: "Menu",
       })),
-      ...sites.map((s) => ({ href: `/imported/${s.id}`, label: `${s.name} (${s.code})`, group: "Imported website" })),
-      ...built.map((p) => ({ href: `/built/${p.id}`, label: `${p.name} · ${p.team}`, group: "Built project" })),
+      ...sites.map((s) => ({ href: `/imported/${s.id}`, label: `${s.name} (${s.code}) · ${s.team}`, group: "Imported website" })),
       ...categories.map((c) => ({ href: "/builder", label: c.label, group: "Component" })),
     ],
-    [sites, built, categories],
+    [sites, categories],
   );
 
   const q = query.trim().toLowerCase();

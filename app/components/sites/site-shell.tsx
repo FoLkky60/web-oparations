@@ -1,7 +1,7 @@
 "use client";
 
 /*
- * ADD-04 Phase E — โครงร่วมของหน้าเว็บทีม (ใช้ทั้ง original และ built)
+ * ADD-04 Phase E — โครงร่วมของหน้าเว็บทีม (ใช้ทั้งมุมมอง original และ standardized — ADD-05)
  * พื้น/ตัวอักษร/ฟอนต์ ของหน้า derive จาก standard categories ผ่าน useSiteTheme
  * @container → layout ปรับตามความกว้างพื้นที่ main ของแพลตฟอร์ม (ไม่ใช่ viewport)
  */

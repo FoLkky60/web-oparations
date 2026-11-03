@@ -1,4 +1,3 @@
-import { nanoid } from "nanoid";
 import {
   DESIGN_SYSTEM_VERSION_SEED,
   designSystemFromVersion,
@@ -12,20 +11,45 @@ import type {
 } from "@shared/index";
 import { designSystemRepository } from "./repository";
 import { ServiceError } from "./project-service";
+import { STANDARD_V321_VERSION, buildStandardV321 } from "./standard-v321";
 
 /**
  * CRUD + versioning over the design system repository. A fresh install is
- * seeded (once) with the engine's DESIGN_SYSTEM_VERSION_SEED (v1), which becomes
- * the first active version. New versions are immutable: editing means creating a
+ * seeded (once) with the engine's DESIGN_SYSTEM_VERSION_SEED (1.0.0, inactive)
+ * and Standard v3.2.1 (active, see ./standard-v321.ts). New versions are immutable: editing means creating a
  * new version, which is then made active (single-active invariant enforced by
  * the repository).
  */
 
-/** Seed v1 from the engine if the repository has no versions yet. */
-async function ensureSeeded(): Promise<void> {
+/**
+ * Seed + migrate (ADD-04 D-2), idempotent:
+ * - fresh install: store the engine seed "1.0.0", then "3.2.1" (create() makes
+ *   the newest version active, so 1.0.0 ends up inactive and 3.2.1 active).
+ * - existing install without "3.2.1": add it once and activate it. 1.0.0 and
+ *   any admin-created versions are kept. Once 3.2.1 exists this is a no-op,
+ *   so an admin activating a later version is never overridden.
+ * Memoized per process so concurrent first requests do not race.
+ */
+let seeding: Promise<void> | null = null;
+
+async function seedAndMigrate(): Promise<void> {
   if (await designSystemRepository.isEmpty()) {
     await designSystemRepository.create({ ...DESIGN_SYSTEM_VERSION_SEED });
   }
+  if (!(await designSystemRepository.get(STANDARD_V321_VERSION))) {
+    await designSystemRepository.create(buildStandardV321());
+  }
+}
+
+async function ensureSeeded(): Promise<void> {
+  // Share one in-flight run between concurrent callers; re-check afterwards
+  // (cheap file reads) so a wiped storage dir is re-seeded.
+  if (!seeding) {
+    seeding = seedAndMigrate().finally(() => {
+      seeding = null;
+    });
+  }
+  return seeding;
 }
 
 export async function getActiveVersion(): Promise<DesignSystemVersion> {

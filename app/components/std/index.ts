@@ -30,6 +30,7 @@ export {
   StdCard,
   StdInset,
   StdNav,
+  StdNavAction,
   StdSideNav,
   StdTable,
   StdFooter,

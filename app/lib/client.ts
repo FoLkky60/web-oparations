@@ -18,20 +18,53 @@ import type { ProjectRecord } from "./repository";
  * error envelope `{ error: { code, message } }` is parsed and surfaced as a
  * thrown Error on non-2xx responses.
  *
- * Pages still use app/lib/mock-store until Phase 4 switches them over to this
- * client; mock-store is intentionally left in place.
+ * ADD-04 Phase F: Upload, Project Catalog and Project detail use this client.
+ * The mock Builder/imported/built pages still use their own mock stores.
  */
 
-async function req<T>(input: string, init?: RequestInit): Promise<T> {
+/** Error thrown for non-2xx responses; carries the envelope code + HTTP status. */
+export class ApiRequestError extends Error {
+  constructor(message: string, public code: string | null, public status: number) {
+    super(message);
+  }
+}
+
+/**
+ * `okStatuses` lists extra non-2xx statuses whose body is a normal typed
+ * payload (e.g. upload returns 422 + validation result when the project has
+ * blocking issues).
+ */
+async function req<T>(input: string, init?: RequestInit, okStatuses: number[] = []): Promise<T> {
   const res = await fetch(input, { credentials: "include", ...init });
   const text = await res.text();
-  const body = text ? JSON.parse(text) : {};
-  if (!res.ok) {
+  let body: { error?: { code?: string; message?: string } } & Record<string, unknown> = {};
+  try {
+    body = text ? JSON.parse(text) : {};
+  } catch {
+    // Non-JSON body (e.g. a proxy/HTML error page) — fall through to a generic message.
+  }
+  if (!res.ok && (body?.error || !okStatuses.includes(res.status))) {
     const message: string =
       body?.error?.message ?? `Request failed (${res.status})`;
-    throw new Error(message);
+    throw new ApiRequestError(message, body?.error?.code ?? null, res.status);
   }
-  return body as T;
+  return body as unknown as T;
+}
+
+export interface TransformationSummary {
+  version: number;
+  status: TransformationReport["status"];
+  categories: TransformationCategory[];
+  changeCount: number;
+  createdAt: string;
+}
+
+export interface FileComparison {
+  path: string;
+  version: number;
+  original: string | null;
+  output: string | null;
+  kind: "html" | "css" | "js" | "asset" | "unsupported";
 }
 
 export interface DesignSystemVersionSummary {
@@ -81,13 +114,23 @@ export const api = {
     return req<{ validation: ValidationResult; project: Project }>(
       `/api/projects/${id}/upload`,
       { method: "POST", body: form },
+      [422],
     );
   },
 
+  /** Re-validate the stored original upload (read-only). */
+  validate: (id: string) =>
+    req<{ validation: ValidationResult }>(
+      `/api/projects/${id}/validate`,
+      { method: "POST" },
+      [422],
+    ),
   analyze: (id: string) =>
-    req<{ analysis: AnalysisResult }>(`/api/projects/${id}/analyze`, {
-      method: "POST",
-    }),
+    req<{ analysis: AnalysisResult }>(
+      `/api/projects/${id}/analyze`,
+      { method: "POST" },
+      [422],
+    ),
 
   getAnalysis: (id: string) =>
     req<{ analysis: AnalysisResult }>(`/api/projects/${id}/analysis`),
@@ -100,6 +143,19 @@ export const api = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ categories }),
       },
+      [422],
+    ),
+  listTransformations: (id: string) =>
+    req<{ transformations: TransformationSummary[] }>(
+      `/api/projects/${id}/transformations`,
+    ),
+  getTransformation: (id: string, version: number) =>
+    req<{ version: number; report: TransformationReport }>(
+      `/api/projects/${id}/transformations/${version}`,
+    ),
+  compareFile: (id: string, version: number, path: string) =>
+    req<{ file: FileComparison }>(
+      `/api/projects/${id}/transformations/${version}/file?path=${encodeURIComponent(path)}`,
     ),
 
   getCompliance: (id: string) =>

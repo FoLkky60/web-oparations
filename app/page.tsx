@@ -3,7 +3,6 @@
 import Link from "next/link";
 import {
   getBuilderState,
-  getBuiltProjects,
   getDashboardMetrics,
   getSiteSummaries,
 } from "./lib/standard-store";
@@ -46,6 +45,7 @@ import {
  * Dashboard (ADD-04 §4.2) — mock data
  * - ตัวเลข portfolio / UI issues / trend / activity = mock constants (standard-data.ts)
  * - Recent Projects, pipeline counts, เวอร์ชัน Design System = คำนวณจาก standard-store
+ * - ADD-05: Output = 5 เว็บ (ทุกเว็บมี standardized build) — Recent Projects ลิงก์ไป /imported/[siteId]
  * ============================================================================
  */
 
@@ -53,7 +53,6 @@ export default function Dashboard() {
   const builder = useStandard(getBuilderState);
   const summaries = useStandard(getSiteSummaries);
   const metrics = useStandard(getDashboardMetrics);
-  const built = useStandard(getBuiltProjects);
 
   const recent = [...summaries].sort((a, b) => b.site.lastAnalyzed.localeCompare(a.site.lastAnalyzed));
   const totalIssues = UI_ISSUES.reduce((sum, i) => sum + i.count, 0);
@@ -66,7 +65,11 @@ export default function Dashboard() {
       detail: `${metrics.decided} of ${metrics.totalCategories} categories decided (Draft v${builder.draft.version})`,
       Icon: IconTemplate,
     },
-    { title: "Output", detail: `${built.length} team workspaces built`, Icon: IconBox },
+    {
+      title: "Output",
+      detail: `${summaries.length} websites built with Standard v${builder.workspaces.version}`,
+      Icon: IconBox,
+    },
   ];
 
   return (
@@ -79,7 +82,7 @@ export default function Dashboard() {
             <span className="text-xs text-[var(--color-muted)]">{formatDate(MOCK_AS_OF)}</span>
           </>
         }
-        description="Analyze imported websites, choose one standard per component, and rebuild every team workspace with it."
+        description="Analyze imported websites, choose one standard per component, and rebuild every imported website with it."
         actions={
           <LinkButton href="/upload" variant="primary">
             <IconPlus size={16} /> Upload Website
@@ -192,7 +195,7 @@ export default function Dashboard() {
           </div>
           <p className="mt-3 text-xs text-[var(--color-muted)]">
             Source compliance compares each original website (never modified) with Standard v{builder.published.version}.
-            Built team workspaces use the standard set.
+            Open a website to see its standardized build (default) or its original source.
           </p>
         </Card>
 

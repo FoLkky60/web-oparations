@@ -76,7 +76,7 @@ export function IconDesignSystem(props: IconProps) {
   );
 }
 
-/** เครื่องหมายถูก — ใช้แทน ✓ */
+/** เครื่องหมายถูก — ใช้แทน text glyph (check mark) */
 export function IconCheck(props: IconProps) {
   return (
     <Svg {...props}>
@@ -293,7 +293,7 @@ export function IconMinus(props: IconProps) {
   );
 }
 
-/** กล่องซ้อน — built project / workspace */
+/** กล่องซ้อน — standardized build */
 export function IconBox(props: IconProps) {
   return (
     <Svg {...props}>
@@ -317,7 +317,7 @@ export function IconGlobe(props: IconProps) {
 }
 
 /* ---------------------------------------------------------------------------
- * ADD-04 (Phase E) — ไอคอนสำหรับ built projects / imported websites
+ * ADD-04 (Phase E) — ไอคอนสำหรับหน้าเว็บของ imported websites
  * ------------------------------------------------------------------------- */
 
 /** ลูกศรซ้าย — แทน ← */
@@ -455,6 +455,112 @@ export function IconMegaphone(props: IconProps) {
     <Svg {...props}>
       <path d="M3 10v4a1 1 0 0 0 1 1h3l8 5V4L7 9H4a1 1 0 0 0-1 1Z" />
       <path d="M19 9a4 4 0 0 1 0 6" />
+    </Svg>
+  );
+}
+
+/* ---------------------------------------------------------------------------
+ * ADD-04 (Phase D) — ไอคอน component categories + actions ของ Builder
+ * ------------------------------------------------------------------------- */
+
+/** ปุ่ม (Button category) */
+export function IconButtonShape(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <rect x="3" y="7" width="18" height="10" rx="3" />
+      <path d="M8 12h8" />
+    </Svg>
+  );
+}
+
+/** ช่องกรอก (Input field category) */
+export function IconTextField(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <rect x="3" y="6" width="18" height="12" rx="2" />
+      <path d="M7 9v6" />
+    </Svg>
+  );
+}
+
+/** การ์ด (Card category) */
+export function IconCard(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M3 9h18" />
+      <path d="M7 13h6" />
+      <path d="M7 16h4" />
+    </Svg>
+  );
+}
+
+/** แถบนำทาง (Navigation bar category) */
+export function IconNavBar(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M3 9h18" />
+      <path d="M6 6.5h3" />
+      <path d="M12 6.5h2" />
+      <path d="M16 6.5h2" />
+    </Svg>
+  );
+}
+
+/** ตาราง (Data table category) */
+export function IconTable(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M3 9h18" />
+      <path d="M3 14.5h18" />
+      <path d="M9 9v11" />
+    </Svg>
+  );
+}
+
+/** ป้ายสถานะ (Badge / Status category) */
+export function IconTag(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M3 12V5a2 2 0 0 1 2-2h7l9 9-9 9-9-9Z" />
+      <circle cx="8" cy="8" r="1.5" />
+    </Svg>
+  );
+}
+
+/** ท้ายหน้า (Footer category) */
+export function IconFooter(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M3 15h18" />
+      <path d="M6 17.5h4" />
+      <path d="M14 17.5h4" />
+    </Svg>
+  );
+}
+
+/** บันทึก (Save Draft) */
+export function IconSave(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M5 3h11l5 5v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" />
+      <path d="M7 3v5h8V3" />
+      <rect x="7" y="13" width="10" height="8" rx="1" />
+    </Svg>
+  );
+}
+
+/** ย้อนคืน (Reset demo data) */
+export function IconRefresh(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M3 12a9 9 0 0 1 15.5-6.2L21 8" />
+      <path d="M21 3v5h-5" />
+      <path d="M21 12a9 9 0 0 1-15.5 6.2L3 16" />
+      <path d="M3 21v-5h5" />
     </Svg>
   );
 }

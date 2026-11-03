@@ -1,22 +1,12 @@
 import type { Metadata } from "next";
-import { PlaceholderPage } from "../components/placeholder-page";
-import { IconTemplate } from "../components/icons";
+import { BuilderView } from "./builder-view";
 
 export const metadata: Metadata = { title: "Template & Builder · UI Standardization Platform" };
 
 /**
- * Template & Builder — placeholder ชั่วคราว (ADD-04 Phase B)
- * Component Standard Builder จริงจะมาแทนใน Phase D (§4.3)
+ * Template & Builder — Component Standard Builder (ADD-04 Phase D, §4.3)
+ * Server page (metadata) → client view ที่อ่าน/เขียน standard-store (mock, localStorage)
  */
 export default function BuilderPage() {
-  return (
-    <PlaceholderPage
-      title="Component Standard Builder"
-      description="Compare component variants from every imported website and choose one standard per category."
-      icon={<IconTemplate size={22} />}
-      emptyTitle="Builder is being prepared"
-      emptyDescription="The Component Standard Builder is planned for the next phase. Current decisions per category are visible in Component Mapping."
-      primaryAction={{ href: "/mapping", label: "Open Component Mapping" }}
-    />
-  );
+  return <BuilderView />;
 }

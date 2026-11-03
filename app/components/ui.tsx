@@ -89,7 +89,7 @@ export function Button({
   children: ReactNode;
   onClick?: () => void;
   disabled?: boolean;
-  variant?: "primary" | "secondary" | "outline";
+  variant?: "primary" | "secondary" | "outline" | "danger";
   type?: "button" | "submit";
   className?: string;
 }) {
@@ -100,7 +100,9 @@ export function Button({
       ? "bg-[var(--color-primary)] text-[var(--color-on-primary)] hover:bg-[var(--color-primary-hover)] active:bg-[var(--color-primary-active)]"
       : variant === "outline"
         ? "border border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-secondary)]"
-        : "border border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-text)] hover:bg-[var(--color-surface)]";
+        : variant === "danger"
+          ? "bg-[var(--color-danger)] text-[var(--color-on-primary)] hover:opacity-90"
+          : "border border-[var(--color-border)] bg-[var(--color-background)] text-[var(--color-text)] hover:bg-[var(--color-surface)]";
   return (
     <button type={type} onClick={onClick} disabled={disabled} className={`${base} ${styles} ${className}`}>
       {children}
@@ -308,5 +310,18 @@ export function Chip({ children }: { children: ReactNode }) {
     <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-secondary)] px-2.5 py-0.5 text-xs font-medium text-[var(--color-primary-active)]">
       {children}
     </span>
+  );
+}
+
+/** Inline error notice (role="alert") — icon + message, never color alone. */
+export function ErrorBox({ message }: { message: string }) {
+  return (
+    <div
+      role="alert"
+      className="flex items-start gap-2 rounded-[var(--radius-medium)] border border-[var(--color-danger)] bg-[color-mix(in_srgb,var(--color-danger)_8%,white)] p-3 text-sm text-[var(--color-danger)]"
+    >
+      <IconAlert size={18} />
+      <span>{message}</span>
+    </div>
   );
 }

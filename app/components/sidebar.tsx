@@ -2,16 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { getBuiltProjects, getNavCounts, getSites } from "../lib/standard-store";
+import { getNavCounts, getSiteBuilds, getSites } from "../lib/standard-store";
 import { useStandard } from "../lib/use-standard";
 import { CURRENT_USER } from "../lib/standard-data";
-import { SITE_STATUS } from "../lib/standard-labels";
+import { siteBuildStatus } from "../lib/standard-labels";
 import { MAIN_NAV, hasPermission, isActivePath } from "./nav-config";
-import { IconBox, IconCheck, IconCircle } from "./icons";
+import { IconAlert, IconCheck } from "./icons";
 
 /**
  * Sidebar เข้ม (ADD-04 §4.1)
- * MAIN MENU + IMPORTED WEBSITES (n) + BUILT PROJECTS (n) + user card
+ * MAIN MENU + IMPORTED WEBSITES (5) + user card
+ * ADD-05: กลุ่มเดียว — เว็บ 5 เว็บ = standardized build ด้วย (ไม่มีกลุ่ม BUILT PROJECTS แยก)
+ * pill ต่อเว็บ = "v<built version>" (success) หรือ "Needs rebuild" (warning)
  * ตัวเลข badge ทั้งหมดคำนวณจาก standard-store
  */
 export function Sidebar() {
@@ -29,7 +31,7 @@ export function Sidebar() {
 export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const sites = useStandard(getSites);
-  const built = useStandard(getBuiltProjects);
+  const builds = useStandard(getSiteBuilds);
   const counts = useStandard(getNavCounts);
 
   const navItems = MAIN_NAV.filter((item) => hasPermission(item.requiredPermission));
@@ -90,7 +92,8 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           {sites.map((site) => {
             const href = `/imported/${site.id}`;
             const active = isActivePath(pathname, href);
-            const st = SITE_STATUS[site.status];
+            const st = siteBuildStatus(builds[site.id]);
+            const warn = st.tone === "warning";
             return (
               <li key={site.id}>
                 <Link
@@ -107,13 +110,18 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                   >
                     {site.code}
                   </span>
-                  <span className="flex-1 truncate">{site.name}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate">{site.name}</span>
+                    <span className="block truncate text-[11px] text-[var(--color-sidebar-muted)]">Team {site.team}</span>
+                  </span>
                   <span
-                    className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
-                      site.status === "built" ? "bg-white/15 text-white" : "text-[var(--color-sidebar-muted)] ring-1 ring-white/20"
+                    className={`inline-flex shrink-0 items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                      warn
+                        ? "bg-[var(--color-warning)] text-white"
+                        : "bg-[var(--color-success)] text-white"
                     }`}
                   >
-                    {site.status === "built" ? <IconCheck size={10} /> : <IconCircle size={10} />}
+                    {warn ? <IconAlert size={10} /> : <IconCheck size={10} />}
                     {st.label}
                   </span>
                 </Link>
@@ -122,31 +130,6 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           })}
         </ul>
 
-        <SectionLabel>Built Projects ({built.length})</SectionLabel>
-        <ul>
-          {built.map((p) => {
-            const href = `/built/${p.id}`;
-            const active = isActivePath(pathname, href);
-            return (
-              <li key={p.id}>
-                <Link
-                  href={href}
-                  onClick={onNavigate}
-                  aria-current={active ? "page" : undefined}
-                  className={`${linkBase} ${
-                    active ? "bg-white/10 font-medium text-white" : "text-[var(--color-sidebar-muted)] hover:bg-white/5 hover:text-white"
-                  }`}
-                >
-                  <IconBox size={18} className="shrink-0" />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate">{p.name}</span>
-                    <span className="block truncate text-[11px] text-[var(--color-sidebar-muted)]">Team {p.team}</span>
-                  </span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
       </nav>
 
       <div className="flex items-center gap-3 border-t border-white/10 px-4 py-3">

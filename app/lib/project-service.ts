@@ -19,6 +19,7 @@ import type {
 import { repository, type ProjectRecord } from "./repository";
 import { storage } from "./storage";
 import { workspaceToZip, zipToWorkspace } from "./workspace-zip";
+import { getActiveDesignSystem } from "./design-system-service";
 
 /**
  * Application service orchestrating the project lifecycle. Route handlers are
@@ -55,6 +56,10 @@ export async function getProjectRecord(id: string): Promise<ProjectRecord | null
 }
 
 export async function deleteProject(id: string): Promise<void> {
+  const record = await repository.getProject(id);
+  for (const t of record?.transformations ?? []) {
+    await storage.delete(t.storageReference);
+  }
   await storage.delete(ORIGINAL_KEY(id));
   await repository.deleteProject(id);
 }
@@ -136,7 +141,9 @@ export async function validateStored(id: string): Promise<ValidationResult> {
 
 export async function analyze(id: string): Promise<AnalysisResult> {
   const ws = await loadOriginalWorkspace(id);
-  const result = analyzeProject(ws);
+  // Always analyze against the ACTIVE design system version (ADD-04 D-2).
+  const ds = await getActiveDesignSystem();
+  const result = analyzeProject(ws, ds);
   await repository.saveAnalysis(id, result);
   await repository.updateProject(id, {
     status: result.status === "completed" ? "analyzed" : "failed",
@@ -150,7 +157,8 @@ export async function transform(
   categories?: TransformationCategory[],
 ): Promise<{ report: TransformationReport; version: number }> {
   const original = await loadOriginalWorkspace(id);
-  const { output, report } = transformProject(original, { categories });
+  const ds = await getActiveDesignSystem();
+  const { output, report } = transformProject(original, { categories, designSystem: ds });
 
   const record = await repository.getProject(id);
   const versionNumber = (record?.transformations.length ?? 0) + 2; // v1 is original
@@ -191,6 +199,46 @@ export async function exportOutput(id: string, version?: number): Promise<{ buff
   if (!(await storage.exists(t.storageReference))) return null;
   const buffer = await storage.get(t.storageReference);
   return { buffer, filename: `${record.project.name.replace(/\s+/g, "-")}-standardized-v${t.version}.zip` };
+}
+
+export interface FileComparison {
+  path: string;
+  version: number;
+  original: string | null;
+  output: string | null;
+  kind: "html" | "css" | "js" | "asset" | "unsupported";
+}
+
+/**
+ * Original vs standardized text of ONE file for a transformation version.
+ * The requested path is only used as a lookup key against the stored
+ * workspaces' file lists (never joined into a filesystem path), so unknown or
+ * traversal-style paths simply resolve to NOT_FOUND. Read-only (RULE-01).
+ */
+export async function compareFile(id: string, version: number, filePath: string): Promise<FileComparison> {
+  const record = await repository.getProject(id);
+  if (!record) throw new ServiceError("NOT_FOUND", `Project ${id} not found`, 404);
+  const t = record.transformations.find((x) => x.version === version);
+  if (!t) throw new ServiceError("NOT_FOUND", `Transformation version ${version} not found`, 404);
+  if (!(await storage.exists(t.storageReference))) {
+    throw new ServiceError("NO_OUTPUT", "Stored output for this version is missing.", 409);
+  }
+  const original = await loadOriginalWorkspace(id);
+  const output = await zipToWorkspace(await storage.get(t.storageReference));
+  const before = original.list().find((f) => f.path === filePath) ?? null;
+  const after = output.list().find((f) => f.path === filePath) ?? null;
+  if (!before && !after) throw new ServiceError("NOT_FOUND", "File not found in this project version.", 404);
+  const kind = (after ?? before)!.kind;
+  if (kind !== "html" && kind !== "css" && kind !== "js") {
+    throw new ServiceError("NOT_TEXT", "Only HTML, CSS and JS files can be compared.", 400);
+  }
+  return {
+    path: filePath,
+    version,
+    original: before?.text ?? null,
+    output: after?.text ?? null,
+    kind,
+  };
 }
 
 export function designSystem(version?: string) {

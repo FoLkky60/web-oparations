@@ -6,7 +6,7 @@ import { IconClose, IconMenu } from "./icons";
 
 /**
  * Navigation สำหรับจอเล็ก (< md) — ปุ่ม Menu เปิด drawer ที่มีเนื้อหาเดียวกับ Sidebar
- * (เมนูหลัก + Imported websites + Built projects + user) ตาม design-system-policies §9
+ * (เมนูหลัก + Imported websites (5) + user — ADD-05 ไม่มีกลุ่ม Built projects แยก) ตาม design-system-policies §9
  *  - Escape / คลิกพื้นหลัง / คลิกลิงก์ = ปิด
  *  - เปิดแล้ว focus ไปที่ปุ่มปิด, ปิดแล้วคืน focus ให้ปุ่ม Menu
  */

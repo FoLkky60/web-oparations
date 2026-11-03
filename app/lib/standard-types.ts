@@ -1,10 +1,7 @@
 /*
  * ============================================================================
- * ADD-04 — types ของ mock data ชุดใหม่ (Component Standard Builder + Built Projects)
+ * ADD-04/ADD-05 — types ของ mock data ชุดใหม่ (Component Standard Builder + 5 imported websites)
  * อ้างอิง: .aidlc/specs/ui-standardization-platform/change-request-ADD-04.md §2, §3, §4.3, §5
- *
- * แยกจาก mock-types.ts (ADD-02) โดยตั้งใจ — ของเดิมยังมีหน้าเก่า import อยู่
- * (cleanup ใน Phase H)
  * ============================================================================
  */
 
@@ -24,8 +21,17 @@ export const CATEGORY_IDS: readonly CategoryId[] = [
 /** 5 imported websites (§2) */
 export type SiteId = "cp" | "bd" | "hr" | "po" | "li";
 
-/** สถานะใน sidebar: built = มี team workspace แล้ว, imported = ยังเป็นเว็บต้นฉบับอย่างเดียว (D-6) */
-export type SiteStatus = "built" | "imported";
+/**
+ * ADD-05: เว็บ 5 เว็บ = ชุดเดียว — ทุกเว็บมี standardized build (แทน SiteStatus "built" | "imported" + BuiltProject เดิม)
+ * สถานะ build ต่อเว็บ (derive จาก BuilderState — ไม่เก็บซ้ำ)
+ */
+export interface SiteBuild {
+  siteId: SiteId;
+  /** เวอร์ชันมาตรฐานที่ build อยู่ (= workspaces.version) */
+  version: string;
+  /** publish เวอร์ชันใหม่แล้วแต่ยังไม่ rebuild (workspaces.version !== published.version) */
+  needsRebuild: boolean;
+}
 
 /** สถานะ pipeline ที่แสดงในตาราง Recent Projects ของ Dashboard (§4.2) */
 export type PipelineStatus = "standardized" | "in-review" | "needs-attention" | "analyzing";
@@ -36,7 +42,6 @@ export interface ImportedWebsite {
   code: string;
   name: string;
   team: string;
-  status: SiteStatus;
   /** จำนวน component ที่ extract ได้ (Source websites panel) */
   componentCount: number;
   /** จำนวนหน้าในเว็บต้นฉบับ */
@@ -113,16 +118,6 @@ export interface Category {
   label: string;
 }
 
-export interface BuiltProject {
-  /** slug ใช้ใน /built/[projectId] */
-  id: string;
-  siteId: SiteId;
-  name: string;
-  team: string;
-  /** path ของหน้าหลักใน built workspace (mock) */
-  path: string;
-}
-
 /** สถานะ decision ของแต่ละ category ใน draft (§4.3) */
 export type DecisionStatus = "decided" | "skipped" | "choosing" | "pending" | "not-started";
 
@@ -155,6 +150,16 @@ export interface BuilderState {
     publishedAt: string;
   };
   toggles: BuilderToggles;
+  /**
+   * มาตรฐานที่ standardized build ของทั้ง 5 เว็บถูก build ล่าสุด (D-7, ADD-05)
+   * Auto-rebuild = on → อัปเดตพร้อม publish; off → คงเวอร์ชันเดิมจนกว่าจะสั่ง Rebuild
+   */
+  workspaces: {
+    version: string;
+    decisions: Record<CategoryId, string>;
+    /** ISO date */
+    rebuiltAt: string;
+  };
 }
 
 /** ผลกระทบต่อแต่ละเว็บเมื่อใช้ variant หนึ่งเป็นมาตรฐาน (Impact preview / Applies to all projects) */
@@ -213,4 +218,14 @@ export interface MockNotification {
   id: string;
   text: string;
   at: string;
+}
+
+/** Design token ของ active standard (tab Design Tokens ใน Builder) — mock (ADD-04 Phase D) */
+export interface StandardToken {
+  name: string;
+  /** color = hex · radius/space/size = "<n>px" · font = ข้อความแสดงผล */
+  group: "color" | "radius" | "space" | "size" | "font";
+  value: string;
+  /** ใช้กับ group "font" เพื่อจับคู่กับ VariantStyle */
+  typography?: { family: string; weight: number; size: number };
 }

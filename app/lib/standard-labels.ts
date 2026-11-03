@@ -7,15 +7,17 @@ import type {
   DecisionStatus,
   ImpactStatus,
   PipelineStatus,
-  SiteStatus,
+  SiteBuild,
 } from "./standard-types";
 
 type LabelTone = { label: string; tone: Tone };
 
-export const SITE_STATUS: Record<SiteStatus, LabelTone> = {
-  built: { label: "Built", tone: "success" },
-  imported: { label: "Imported", tone: "neutral" },
-};
+/** ADD-05: สถานะ build ต่อเว็บ — "v<built version>" (success) หรือ "Needs rebuild" (warning) */
+export function siteBuildStatus(build: SiteBuild): LabelTone {
+  return build.needsRebuild
+    ? { label: "Needs rebuild", tone: "warning" }
+    : { label: `v${build.version}`, tone: "success" };
+}
 
 export const PIPELINE_STATUS: Record<PipelineStatus, LabelTone> = {
   standardized: { label: "Standardized", tone: "success" },
@@ -44,22 +46,25 @@ export const DECISION_STATUS: Record<DecisionStatus, LabelTone> = {
   "not-started": { label: "Not started", tone: "neutral" },
 };
 
-/** วันที่แบบคงที่ (UTC, en-GB) เพื่อให้ SSR/CSR ได้ข้อความเดียวกัน */
-export function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    timeZone: "UTC",
-  });
+/*
+ * วันที่แบบคงที่ (UTC) ประกอบเองโดยไม่ใช้ Intl/toLocale*
+ * เหตุผล: ผลลัพธ์ของ Intl ขึ้นกับเวอร์ชัน ICU ของ Node กับ browser
+ * (เช่น Node: "3 Nov at 08:40" vs browser: "3 Nov, 08:40") → hydration mismatch
+ */
+export const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+function pad2(n: number): string {
+  return n < 10 ? `0${n}` : String(n);
 }
 
+/** "3 Nov 2026" */
+export function formatDate(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getUTCDate()} ${MONTHS_SHORT[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+}
+
+/** "3 Nov, 08:40" */
 export function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString("en-GB", {
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "UTC",
-  });
+  const d = new Date(iso);
+  return `${d.getUTCDate()} ${MONTHS_SHORT[d.getUTCMonth()]}, ${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())}`;
 }

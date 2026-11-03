@@ -181,6 +181,8 @@ export function StdNav({ brand, links = [], actions, mobileExtra, ariaLabel }: S
   const panelId = useId();
   const hasMenu = links.length > 0 || !!mobileExtra;
   const vars = cssVars({
+    "--sn-brand": c.brand,
+    "--sn-bg-ink": c.bg,
     "--sn-link": c.link,
     "--sn-active": c.active,
     "--sn-tint": `color-mix(in srgb, ${c.active} 12%, transparent)`,
@@ -188,7 +190,7 @@ export function StdNav({ brand, links = [], actions, mobileExtra, ariaLabel }: S
   });
 
   return (
-    <header style={{ ...vars, background: c.bg, borderBottom: c.s.border }}>
+    <header style={{ ...vars, background: c.bg, color: c.brand, borderBottom: c.s.border }}>
       <div className={`${SITE_CONTAINER} flex flex-wrap items-center gap-x-4 gap-y-2 py-2`} style={{ minHeight: c.s.height }}>
         {hasMenu && (
           <button
@@ -260,6 +262,74 @@ export function StdNav({ brand, links = [], actions, mobileExtra, ariaLabel }: S
         </div>
       )}
     </header>
+  );
+}
+
+/**
+ * action ภายใน StdNav (ลิงก์/ปุ่มไอคอน เช่น Help Center, Help, Notifications)
+ * ใช้สีของ navbar (สืบทอด CSS vars จาก StdNav) จึงอ่านได้ทั้งบนแถบสว่างและเข้ม
+ */
+export function StdNavAction({
+  label,
+  icon,
+  showLabel = true,
+  count,
+  href,
+  onClick,
+}: {
+  label: string;
+  icon?: ReactNode;
+  /** false = ไอคอนอย่างเดียว (label เป็น aria-label) */
+  showLabel?: boolean;
+  /** ตัวเลขแจ้งเตือน (แสดงคู่กับ label ใน aria-label) */
+  count?: number;
+  href?: string;
+  onClick?: () => void;
+}) {
+  const s = useStdStyle("navbar");
+  const accessible = count ? `${label}, ${count} unread` : label;
+  const style: CSSProperties = { ...navLinkStyle(s), minWidth: 44, justifyContent: "center" };
+  const inner = (
+    <>
+      {icon}
+      {showLabel && label}
+      {count ? (
+        <span
+          aria-hidden="true"
+          className="absolute right-1 top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold leading-none"
+          style={{ background: "var(--sn-active)", color: "var(--sn-bg-ink)" }}
+        >
+          {count}
+        </span>
+      ) : null}
+    </>
+  );
+  if (href !== undefined) {
+    return (
+      <a
+        href={href}
+        aria-label={showLabel && !count ? undefined : accessible}
+        onClick={(e) => {
+          preventMockNavigation(e, href);
+          onClick?.();
+        }}
+        className={NAV_LINK_CLASS}
+        style={style}
+      >
+        {inner}
+      </a>
+    );
+  }
+  return (
+    <button
+      type="button"
+      aria-label={showLabel && !count ? undefined : accessible}
+      onClick={onClick}
+      className={NAV_LINK_CLASS}
+      style={style}
+    >
+      {inner}
+    </button>
   );
 }
 

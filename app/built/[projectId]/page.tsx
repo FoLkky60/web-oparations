@@ -1,38 +1,16 @@
-import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import { PlaceholderPage } from "../../components/placeholder-page";
-import { IconBox } from "../../components/icons";
-import { BUILT_PROJECTS } from "../../lib/standard-data";
+import { notFound, redirect } from "next/navigation";
+import { LEGACY_BUILT_PROJECT_SITE } from "../../lib/standard-data";
 
 /**
- * Built project — placeholder ชั่วคราว (ADD-04 Phase B)
- * viewer + เว็บของทีมที่ใช้งานได้จริงจะมาแทนใน Phase E (§4.4)
+ * ADD-05: "Built projects" ไม่ใช่ชุดแยกอีกต่อไป — เว็บ 5 เว็บมี standardized build ในตัว (/imported/[siteId])
+ * route นี้เหลือไว้เพื่อให้ลิงก์เก่าใช้ได้: redirect (307) ไปเว็บที่ตรงกัน, id อื่น → 404
  */
-
-export function generateStaticParams() {
-  return BUILT_PROJECTS.map((p) => ({ projectId: p.id }));
-}
-
-export async function generateMetadata({ params }: { params: Promise<{ projectId: string }> }): Promise<Metadata> {
+export default async function LegacyBuiltProjectPage({ params }: { params: Promise<{ projectId: string }> }) {
   const { projectId } = await params;
-  const project = BUILT_PROJECTS.find((p) => p.id === projectId);
-  return { title: `${project?.name ?? "Project"} · Built projects` };
-}
-
-export default async function BuiltProjectPage({ params }: { params: Promise<{ projectId: string }> }) {
-  const { projectId } = await params;
-  const project = BUILT_PROJECTS.find((p) => p.id === projectId);
-  if (!project) notFound();
-
-  return (
-    <PlaceholderPage
-      title={project.name}
-      meta={<span className="text-xs text-[var(--color-muted)]">Team {project.team} · Standardized build</span>}
-      description="Team workspace rebuilt with the published component standard."
-      icon={<IconBox size={22} />}
-      emptyTitle="Built workspace preview is coming soon"
-      emptyDescription="The team website rendered with the standard component set will be viewable here in a later phase."
-      primaryAction={{ href: "/builder", label: "Template & Builder" }}
-    />
-  );
+  // own-property check เท่านั้น (กัน id อย่าง "constructor" / "__proto__")
+  const siteId = Object.prototype.hasOwnProperty.call(LEGACY_BUILT_PROJECT_SITE, projectId)
+    ? LEGACY_BUILT_PROJECT_SITE[projectId]
+    : undefined;
+  if (!siteId) notFound();
+  redirect(`/imported/${siteId}`);
 }

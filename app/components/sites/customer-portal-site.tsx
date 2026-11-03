@@ -19,6 +19,7 @@ import {
   StdInput,
   StdInset,
   StdNav,
+  StdNavAction,
   StdTable,
   useSiteTheme,
   type StdTableColumn,
@@ -180,9 +181,7 @@ export function CustomerPortalSite() {
         links={[{ label: "Home", active: true }, { label: "Services" }, { label: "Billing" }, { label: "Support" }, { label: "Contact" }]}
         actions={
           <>
-            <StdButton variant="text" size="sm" href="#">
-              Help Center
-            </StdButton>
+            <StdNavAction label="Help Center" icon={<IconHelp size={18} />} href="#" />
             <StdButton size="sm">Sign in</StdButton>
           </>
         }
@@ -214,7 +213,7 @@ export function CustomerPortalSite() {
                 ["24/7", "Support desk"],
                 ["12k", "Active accounts"],
               ].map(([value, label]) => (
-                <div key={label} className="min-w-0">
+                <div key={label} className="flex min-w-0 flex-col">
                   <dt className="text-xs @3xl:text-sm" style={{ color: theme.mutedOnPage }}>
                     {label}
                   </dt>

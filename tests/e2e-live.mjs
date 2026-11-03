@@ -17,7 +17,8 @@ const HTML = `<!DOCTYPE html>
   <div class="alert-error">Oops</div>
 </body></html>`;
 
-const CSS = `.submit-btn{background-color:#73493a;border-radius:4px;padding:8px;color:#fff;font-family:Georgia,serif;}
+// #D71920 = color.primary of the active standard v3.2.1 (ADD-04 D-2; was #73493a of v1.0.0)
+const CSS = `.submit-btn{background-color:#D71920;border-radius:4px;padding:8px;color:#fff;font-family:Georgia,serif;}
 .field{border:1px solid #d9d9d9;border-radius:3px;padding:7px;}
 .alert-error{background-color:#cc0000;color:#fff;}
 .topnav{padding:16px;}`;

@@ -223,6 +223,8 @@ export interface StdInputProps {
   max?: string;
   /** stacked = label อยู่บน · inline = label อยู่ซ้าย (เช่น search ใน header) */
   layout?: "stacked" | "inline";
+  /** label ใช้สีตัวอักษรของ parent (เช่น อยู่บน navbar พื้นเข้ม) */
+  labelInherit?: boolean;
   previewState?: "focus";
   className?: string;
 }
@@ -248,6 +250,7 @@ export function StdInput({
   min,
   max,
   layout = "stacked",
+  labelInherit,
   previewState,
   className = "",
 }: StdInputProps) {
@@ -278,7 +281,10 @@ export function StdInput({
     fontWeight: s.fontWeight,
     fontSize: s.fontSize,
   };
-  const labelStyle: CSSProperties = { fontFamily: fontStack(s.fontFamily), color: theme.text };
+  const labelStyle: CSSProperties = {
+    fontFamily: fontStack(s.fontFamily),
+    color: labelInherit ? "inherit" : theme.text,
+  };
 
   const hintNode = (
     <>

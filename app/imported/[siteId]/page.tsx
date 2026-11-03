@@ -1,18 +1,19 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { PlaceholderPage } from "../../components/placeholder-page";
-import { IconGlobe } from "../../components/icons";
-import { StatusPill } from "../../components/ui";
+import { SiteView, type SiteViewMode } from "../../components/sites/site-viewer";
 import { SITES } from "../../lib/standard-data";
-import { SITE_STATUS } from "../../lib/standard-labels";
 
 /**
- * Imported website — placeholder ชั่วคราว (ADD-04 Phase B)
- * หน้าเว็บต้นฉบับจริงของแต่ละทีมจะมาแทนใน phase ถัดไป (D-6)
+ * Imported website (ADD-04 Phase E + ADD-05) — เว็บของทีม 1 ใน 5 เว็บ (ชุดเดียวกับ standardized build)
+ *  - ค่าเริ่มต้น = Standardized (มาตรฐานที่ build ล่าสุด, อัปเดตทันทีหลัง Apply/Rebuild)
+ *  - ?view=original = Original source (ต้นฉบับไม่ถูกแก้ — RULE-01)
  */
 
-export function generateStaticParams() {
-  return SITES.map((s) => ({ siteId: s.id }));
+type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
+
+function parseMode(view: string | string[] | undefined): SiteViewMode {
+  const v = Array.isArray(view) ? view[0] : view;
+  return v === "original" ? "original" : "standardized";
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ siteId: string }> }): Promise<Metadata> {
@@ -21,28 +22,16 @@ export async function generateMetadata({ params }: { params: Promise<{ siteId: s
   return { title: `${site?.name ?? "Website"} · Imported websites` };
 }
 
-export default async function ImportedSitePage({ params }: { params: Promise<{ siteId: string }> }) {
+export default async function ImportedSitePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ siteId: string }>;
+  searchParams: SearchParams;
+}) {
   const { siteId } = await params;
   const site = SITES.find((s) => s.id === siteId);
   if (!site) notFound();
-  const st = SITE_STATUS[site.status];
-
-  return (
-    <PlaceholderPage
-      title={site.name}
-      meta={
-        <>
-          <StatusPill tone={st.tone} label={st.label} />
-          <span className="text-xs text-[var(--color-muted)]">
-            Team {site.team} · {site.componentCount} components · {site.pageCount} pages
-          </span>
-        </>
-      }
-      description="Original source website. The original is never modified."
-      icon={<IconGlobe size={22} />}
-      emptyTitle="Source website preview is coming soon"
-      emptyDescription="The original pages of this website will be viewable here in a later phase."
-      primaryAction={{ href: "/mapping", label: "View component status" }}
-    />
-  );
+  const mode = parseMode((await searchParams).view);
+  return <SiteView siteId={site.id} mode={mode} />;
 }

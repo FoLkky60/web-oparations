@@ -1,7 +1,7 @@
 "use client";
 
 /*
- * ADD-04 Phase E — std widgets (helper ที่ใช้ร่วมใน built projects, §5):
+ * ADD-04 Phase E — std widgets (helper ที่ใช้ร่วมในหน้าเว็บของทีม (ทั้ง 5 เว็บ), §5):
  * StdBrand, StdAvatar, StdStatCard, StdProgress, StdAlert, StdSegmented, StdBreadcrumb,
  * StdBarChart, StdStackedBar
  * อ่านสไตล์ผ่าน category ที่ใกล้ที่สุด (card / button / badge) + useSiteTheme

@@ -1,8 +1,5 @@
 import { parse, serialize } from "parse5";
-import type {
-  TransformationChange,
-  DetectedComponent,
-} from "@shared/index";
+import type { TransformationChange } from "@shared/index";
 import type { ComponentMappingDecision } from "./component-mapping";
 
 /**
@@ -125,12 +122,3 @@ function applyDecision(
   });
 }
 
-/** Produce a per-component summary consumed by the review UI. */
-export function componentChangeSummary(
-  components: DetectedComponent[],
-): { auto: number; review: number; ineligible: number } {
-  return components.reduce(
-    (acc) => acc,
-    { auto: 0, review: 0, ineligible: 0 },
-  );
-}

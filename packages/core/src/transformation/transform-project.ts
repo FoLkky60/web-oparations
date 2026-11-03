@@ -21,6 +21,8 @@ const ALL_CATEGORIES: TransformationCategory[] = ["colors", "radius", "spacing",
 export interface TransformOptions {
   categories?: TransformationCategory[];
   designSystemVersion?: string;
+  /** Full DesignSystem to apply; takes precedence over `designSystemVersion`. */
+  designSystem?: DesignSystem;
 }
 
 export interface TransformOutput {
@@ -39,7 +41,7 @@ export function transformProject(
   opts: TransformOptions = {},
 ): TransformOutput {
   const categories = opts.categories?.length ? opts.categories : ALL_CATEGORIES;
-  const ds: DesignSystem = getDesignSystem(opts.designSystemVersion);
+  const ds: DesignSystem = opts.designSystem ?? getDesignSystem(opts.designSystemVersion);
   const output = original.clone();
   const changes: TransformationChange[] = [];
   const warnings: string[] = [];

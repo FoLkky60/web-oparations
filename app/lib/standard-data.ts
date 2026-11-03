@@ -14,7 +14,6 @@
 
 import type {
   BuilderState,
-  BuiltProject,
   Category,
   CategoryId,
   ImportedWebsite,
@@ -22,6 +21,7 @@ import type {
   MockUser,
   PortfolioStat,
   SiteId,
+  StandardToken,
   TransformationActivity,
   TrendPoint,
   UiIssue,
@@ -39,7 +39,6 @@ export const SITES: ImportedWebsite[] = [
     code: "CP",
     name: "Customer Portal",
     team: "Customer Success",
-    status: "built",
     componentCount: 28,
     pageCount: 14,
     lastAnalyzed: "2026-11-03T08:40:00Z",
@@ -50,7 +49,6 @@ export const SITES: ImportedWebsite[] = [
     code: "BD",
     name: "Billing Dashboard",
     team: "Finance",
-    status: "built",
     componentCount: 24,
     pageCount: 9,
     lastAnalyzed: "2026-11-02T15:10:00Z",
@@ -61,7 +59,6 @@ export const SITES: ImportedWebsite[] = [
     code: "HR",
     name: "HR Self-Service",
     team: "People & Culture",
-    status: "built",
     componentCount: 26,
     pageCount: 17,
     lastAnalyzed: "2026-11-02T09:25:00Z",
@@ -72,7 +69,6 @@ export const SITES: ImportedWebsite[] = [
     code: "PO",
     name: "Partner Onboarding",
     team: "Partner team",
-    status: "imported",
     componentCount: 21,
     pageCount: 8,
     lastAnalyzed: "2026-11-01T11:05:00Z",
@@ -83,7 +79,6 @@ export const SITES: ImportedWebsite[] = [
     code: "LI",
     name: "Legacy Intranet",
     team: "IT",
-    status: "imported",
     componentCount: 19,
     pageCount: 6,
     lastAnalyzed: "2026-10-30T13:45:00Z",
@@ -817,20 +812,15 @@ export const VARIANTS: Variant[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Built projects (3) — §4.4
+// ADD-05: legacy /built/[projectId] ids → site (เดิมเป็น "Built projects (3)" แยก — ตอนนี้รวมเป็น 5 เว็บชุดเดียว)
+// ใช้เฉพาะ redirect เพื่อให้ลิงก์เก่ายังใช้ได้
 // ---------------------------------------------------------------------------
 
-export const BUILT_PROJECTS: BuiltProject[] = [
-  { id: "acme-billing", siteId: "bd", name: "ACME Billing", team: "Finance", path: "/billing/overview" },
-  {
-    id: "acme-customer-portal",
-    siteId: "cp",
-    name: "ACME Customer Portal",
-    team: "Customer Success",
-    path: "/home",
-  },
-  { id: "acme-people", siteId: "hr", name: "ACME People", team: "People & Culture", path: "/leave/request" },
-];
+export const LEGACY_BUILT_PROJECT_SITE: Readonly<Record<string, SiteId>> = {
+  "acme-billing": "bd",
+  "acme-customer-portal": "cp",
+  "acme-people": "hr",
+};
 
 // ---------------------------------------------------------------------------
 // Builder seed — published v3.2.1 (ครบ 7 categories) + draft v3.2.2 (3 of 7 decided)
@@ -873,6 +863,20 @@ export const SEED_BUILDER_STATE: BuilderState = {
     publishedAt: "2026-10-28T10:00:00Z",
   },
   toggles: { enforceAll: true, autoRebuild: true },
+  // standardized build ของทั้ง 5 เว็บถูก build ด้วย v3.2.1 แล้ว (ตรงกับ published) — ADD-05
+  workspaces: {
+    version: "3.2.1",
+    decisions: {
+      button: "button-cp",
+      input: "input-hr",
+      card: "card-bd",
+      navbar: "navbar-cp",
+      table: "table-cp",
+      badge: "badge-cp",
+      footer: "footer-cp",
+    },
+    rebuiltAt: "2026-10-28T10:00:00Z",
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -883,6 +887,26 @@ export const SEED_BUILDER_STATE: BuilderState = {
 export const MOCK_AS_OF = "2026-11-03T09:00:00Z";
 
 export const DESIGN_SYSTEM_META = { components: 128, tokens: 46 } as const;
+
+/**
+ * Design tokens ของ Standard v3.2.1 — MOCK sample (ไม่ใช่ครบ 46 ตัว) สำหรับ tab Design Tokens ใน Builder
+ * - color.primary / text-on-primary / font.body / space.4 / radius.md = ค่าจาก mockup (§6)
+ * - token อื่น (primary-hover, text, border, font.label, space.5, size.control-md) = ค่าที่ระบบแนะนำ (mock)
+ *   ตั้งให้สอดคล้องกับ Button standard ใน §6 (40px / 20px / Inter 600 14px)
+ */
+export const STANDARD_TOKENS: StandardToken[] = [
+  { name: "color.primary", group: "color", value: "#D71920" },
+  { name: "color.primary-hover", group: "color", value: "#B5151B" },
+  { name: "color.text-on-primary", group: "color", value: "#FFFFFF" },
+  { name: "color.text", group: "color", value: "#1F2430" },
+  { name: "color.border", group: "color", value: "#E6E8EC" },
+  { name: "font.body", group: "font", value: "Inter 14/20", typography: { family: "Inter", weight: 400, size: 14 } },
+  { name: "font.label", group: "font", value: "Inter 600 14px", typography: { family: "Inter", weight: 600, size: 14 } },
+  { name: "space.4", group: "space", value: "16px" },
+  { name: "space.5", group: "space", value: "20px" },
+  { name: "radius.md", group: "radius", value: "8px" },
+  { name: "size.control-md", group: "size", value: "40px" },
+];
 
 export const PORTFOLIO_STATS: PortfolioStat[] = [
   {
@@ -958,7 +982,7 @@ export const TRANSFORMATION_ACTIVITY: TransformationActivity[] = [
   {
     id: "act-2",
     title: "Billing Dashboard rebuilt",
-    detail: "Team workspace ACME Billing updated",
+    detail: "Standardized build updated with Standard v3.2.1",
     status: "success",
     at: "2026-11-02T15:10:00Z",
   },

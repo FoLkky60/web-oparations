@@ -15,9 +15,14 @@ import { getDesignSystem } from "../design-system/design-system";
  */
 export function analyzeProject(
   ws: ProjectWorkspace,
-  designSystemVersion?: string,
+  designSystemVersionOrDs?: string | DesignSystem,
 ): AnalysisResult {
-  const ds: DesignSystem = getDesignSystem(designSystemVersion);
+  // Additive: callers may pass a version id (registry lookup, default v1) or a
+  // full DesignSystem object (e.g. the active version from the app's repository).
+  const ds: DesignSystem =
+    typeof designSystemVersionOrDs === "object" && designSystemVersionOrDs !== null
+      ? designSystemVersionOrDs
+      : getDesignSystem(designSystemVersionOrDs);
   const warnings: string[] = [];
   const allComponents: DetectedComponent[] = [];
   const cssModels: CssModel[] = [];

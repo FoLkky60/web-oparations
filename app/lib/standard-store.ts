@@ -4,11 +4,13 @@
  * ============================================================================
  * ADD-04 — Standard store (client, mock only) — Phase C
  *
- * - ข้อมูล static (sites / categories / variants / built projects) มาจาก standard-data.ts
+ * - ข้อมูล static (sites / categories / variants) มาจาก standard-data.ts
  *   ไม่ถูกแก้ (RULE-01: ต้นฉบับไม่ถูกเขียนทับ)
  * - state ที่เปลี่ยนได้ = BuilderState (draft / published / toggles) เก็บใน localStorage
- *   key "oper.standard.v1" (แยกจาก mock-store เดิมของ ADD-02)
- * - pattern เดียวกับ mock-store: subscribe + version + memo (reference คงที่สำหรับ useSyncExternalStore)
+ *   key "oper.standard.v2"
+ * - ADD-05: 5 imported websites = ชุดเดียว ทุกเว็บมี standardized build (state.workspaces)
+ *   ไม่มี "built project" แยกอีกต่อไป — สถานะ build ต่อเว็บ = getSiteBuild(s)()
+ * - pattern: subscribe + version + memo (reference คงที่สำหรับ useSyncExternalStore)
  * - Hydration: ทั้ง server และ render แรกฝั่ง client ใช้ seed เสมอ แล้วค่อยโหลด localStorage
  *   ตอน subscribe ครั้งแรก (หลัง mount) → ไม่มี hydration mismatch
  * - ไม่มี network call ใด ๆ
@@ -18,12 +20,12 @@
 import type {
   BuilderState,
   BuilderToggles,
-  BuiltProject,
   Category,
   CategoryId,
   DecisionStatus,
   ImportedWebsite,
   MockNotification,
+  SiteBuild,
   SiteId,
   SiteImpact,
   Variant,
@@ -31,7 +33,6 @@ import type {
 } from "./standard-types";
 import { CATEGORY_IDS } from "./standard-types";
 import {
-  BUILT_PROJECTS,
   CATEGORIES,
   NOTIFICATIONS,
   PORTFOLIO_STATS,
@@ -41,7 +42,9 @@ import {
   VARIANTS,
 } from "./standard-data";
 
-const LS_KEY = "oper.standard.v1";
+// v2: BuilderState เพิ่ม workspaces (D-7) — ข้อมูล v1 ใน localStorage จะไม่ถูกอ่าน (fallback seed)
+// ADD-05 ไม่เปลี่ยน shape ของ BuilderState ที่ persist (เปลี่ยนเฉพาะ static data) → คง key v2
+const LS_KEY = "oper.standard.v2";
 
 // ---------------------------------------------------------------------------
 // Static indexes (คำนวณครั้งเดียว — reference คงที่ตลอดอายุแอป)
@@ -152,7 +155,12 @@ function isBuilderState(data: unknown): data is BuilderState {
     const picked = draft.pickedVariantId[c];
     if (picked !== null && !isVariantOf(picked, c)) return false;
     return isVariantOf(published.decisions[c], c);
-  });
+  }) && isWorkspaces(d.workspaces);
+}
+
+function isWorkspaces(w: BuilderState["workspaces"] | undefined): boolean {
+  if (!w || typeof w.version !== "string" || typeof w.rebuiltAt !== "string" || !w.decisions) return false;
+  return CATEGORY_IDS.every((c) => isVariantOf(w.decisions[c], c));
 }
 
 /** memoize ตาม version — คืน reference เดิมจนกว่า state จะเปลี่ยน */
@@ -205,18 +213,6 @@ export function getSiteVariant(siteId: SiteId, categoryId: CategoryId): Variant 
   return VARIANT_BY_ID.get(variantKey(siteId, categoryId)) as Variant;
 }
 
-export function getBuiltProjects(): BuiltProject[] {
-  return BUILT_PROJECTS;
-}
-
-export function getBuiltProject(projectId: string): BuiltProject | undefined {
-  return BUILT_PROJECTS.find((p) => p.id === projectId);
-}
-
-export function getBuiltProjectForSite(siteId: SiteId): BuiltProject | undefined {
-  return BUILT_PROJECTS.find((p) => p.siteId === siteId);
-}
-
 /** สไตล์ต้นฉบับของเว็บ (ไม่เปลี่ยนตาม decision — RULE-01) */
 export function sourceStyle(siteId: SiteId, categoryId: CategoryId): VariantStyle {
   return getSiteVariant(siteId, categoryId).style;
@@ -235,9 +231,34 @@ export function publishedVariant(categoryId: CategoryId): Variant {
   return VARIANT_BY_ID.get(state.published.decisions[categoryId]) as Variant;
 }
 
-/** สไตล์ของ variant ที่ publish อยู่ (ใช้ render built projects) */
+/** สไตล์ของ variant ที่ publish อยู่ (fallback ของ standardized view) */
 export function publishedStyle(categoryId: CategoryId): VariantStyle {
   return publishedVariant(categoryId).style;
+}
+
+/**
+ * สไตล์ของ standardized build (ADD-05, D-7) — ใช้ decisions ที่ build ล่าสุด (state.workspaces)
+ * ไม่ใช่ published โดยตรง: Auto-rebuild ปิด → publish แล้วยังคงเวอร์ชันเดิมจนกว่าจะ rebuildWorkspaces()
+ * มาตรฐานเดียวกันทุกเว็บ (enforce on all projects) จึงไม่ต้องรับ siteId
+ */
+export function standardizedStyle(
+  categoryId: CategoryId,
+  decisions: Record<CategoryId, string> = state.workspaces.decisions,
+): VariantStyle {
+  return getVariant(decisions[categoryId])?.style ?? publishedStyle(categoryId);
+}
+
+/** สถานะ build ของทั้ง 5 เว็บ (memo — reference คงที่จนกว่า state จะเปลี่ยน) */
+export const getSiteBuilds = memo<Record<SiteId, SiteBuild>>(() => {
+  const needsRebuild = state.workspaces.version !== state.published.version;
+  return Object.fromEntries(
+    SITES.map((s) => [s.id, { siteId: s.id, version: state.workspaces.version, needsRebuild }]),
+  ) as Record<SiteId, SiteBuild>;
+});
+
+/** สถานะ build ของเว็บหนึ่ง: built version (= workspaces.version) + needsRebuild */
+export function getSiteBuild(siteId: SiteId): SiteBuild {
+  return getSiteBuilds()[siteId];
 }
 
 export function decidedCount(): number {
@@ -333,7 +354,6 @@ export interface SiteSummary {
   site: ImportedWebsite;
   compliance: number;
   matchedCategories: number;
-  builtProject?: BuiltProject;
 }
 
 export const getSiteSummaries = memo<SiteSummary[]>(() =>
@@ -341,7 +361,6 @@ export const getSiteSummaries = memo<SiteSummary[]>(() =>
     site,
     compliance: siteCompliance(site.id),
     matchedCategories: siteMatchedCategories(site.id),
-    builtProject: getBuiltProjectForSite(site.id),
   })),
 );
 
@@ -375,7 +394,8 @@ export interface NavCounts {
   /** Transformation History — กิจกรรมที่ต้องดู (warning/review) */
   transformationsAttention: number;
   importedWebsites: number;
-  builtProjects: number;
+  /** ADD-05: เว็บที่ publish แล้วแต่ยังไม่ rebuild */
+  needsRebuild: number;
 }
 
 export const getNavCounts = memo<NavCounts>(() => ({
@@ -383,7 +403,7 @@ export const getNavCounts = memo<NavCounts>(() => ({
   builderOpen: openCategoryCount(),
   transformationsAttention: TRANSFORMATION_ACTIVITY.filter((a) => a.status !== "success").length,
   importedWebsites: SITES.length,
-  builtProjects: BUILT_PROJECTS.length,
+  needsRebuild: SITES.filter((s) => getSiteBuild(s.id).needsRebuild).length,
 }));
 
 export const getNotifications = memo<MockNotification[]>(() => {
@@ -461,7 +481,7 @@ export interface ApplyResult {
   /** category ที่ยังไม่ decided ตอน apply (คงมาตรฐานเดิม) */
   unchanged: CategoryId[];
   enforced: boolean;
-  /** จำนวน team workspace ที่ rebuild (0 ถ้าปิด Auto-rebuild) */
+  /** จำนวนเว็บที่ rebuild standardized build (5 = ทุกเว็บ, 0 ถ้าปิด Auto-rebuild) */
   rebuiltWorkspaces: number;
   publishedAt: string;
 }
@@ -491,6 +511,14 @@ export function applyToAllProjects(): ApplyResult | null {
   next.published.publishedAt = publishedAt;
   next.draft.version = bumpPatch(next.draft.version);
   next.draft.savedAt = publishedAt;
+  // D-7 + ADD-05: Auto-rebuild on → standardized build ของทั้ง 5 เว็บใช้มาตรฐานใหม่ทันที; off → คงของเดิมจนกว่าจะ rebuildWorkspaces()
+  if (next.toggles.autoRebuild) {
+    next.workspaces = {
+      version: next.published.version,
+      decisions: { ...next.published.decisions },
+      rebuiltAt: publishedAt,
+    };
+  }
   commit(next);
   return {
     publishedVersion: next.published.version,
@@ -498,9 +526,26 @@ export function applyToAllProjects(): ApplyResult | null {
     applied,
     unchanged: CATEGORY_IDS.filter((c) => !applied.includes(c)),
     enforced: next.toggles.enforceAll,
-    rebuiltWorkspaces: next.toggles.autoRebuild ? BUILT_PROJECTS.length : 0,
+    rebuiltWorkspaces: next.toggles.autoRebuild ? SITES.length : 0,
     publishedAt,
   };
+}
+
+/** standardized build ของเว็บยังไม่ได้ build ด้วยมาตรฐานที่ publish ล่าสุด (เช่น Auto-rebuild ปิดอยู่ตอน apply) */
+export function workspacesOutdated(): boolean {
+  return state.workspaces.version !== state.published.version;
+}
+
+/** Rebuild standardized build ของทั้ง 5 เว็บด้วยมาตรฐานที่ publish อยู่ — คืนจำนวนเว็บที่ rebuild */
+export function rebuildWorkspaces(): number {
+  const next = cloneState();
+  next.workspaces = {
+    version: next.published.version,
+    decisions: { ...next.published.decisions },
+    rebuiltAt: new Date().toISOString(),
+  };
+  commit(next);
+  return SITES.length;
 }
 
 /** คืนค่า seed (published v3.2.1 + draft v3.2.2) */

@@ -3,10 +3,10 @@
 /*
  * ADD-04 Phase E — Style resolver context
  *
- * หน้าเว็บของทีม (app/components/sites/*) ใช้ renderer ตัวเดียวกันทั้ง "original" และ "built"
+ * หน้าเว็บของทีม (app/components/sites/*) ใช้ renderer ตัวเดียวกันทั้ง "original" และ "standardized" (ADD-05)
  * ต่างกันแค่ resolver ที่ส่งเข้ามา:
  *   original → (c) => sourceStyle(siteId, c)   — หน้าตาเดิมของแต่ละทีม
- *   built    → (c) => publishedStyle(c)        — มาตรฐานที่ publish อยู่ (ทุกทีมเหมือนกัน)
+ *   standardized → (c) => standardizedStyle(c, workspaces.decisions) — มาตรฐานที่ build ล่าสุด (ทุกทีมเหมือนกัน)
  * std components อ่านสไตล์ผ่าน useStdStyle(categoryId) จึงไม่ต้องส่ง resolver ต่อกันเอง
  */
 
